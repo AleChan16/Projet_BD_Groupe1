@@ -1,0 +1,20 @@
+# Données brutes — trop lourdes pour git
+/data/
+scripts/data/download_data/
+scripts/data/*.csv
+scripts/data/*.zip
+scripts/data/*.parquet
+
+# Fichiers temporaires
+test*.txt
+*.log
+__pycache__/
+*.pyc
+
+# Variables d'environnement
+.env
+
+# JARs (téléchargés automatiquement)
+config/hive/*.jar
+notebooks/.ipynb_checkpoints/
+.ipynb_checkpoints/

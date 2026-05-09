@@ -1,0 +1,50 @@
+<configuration>
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>s3a://warehouse/</value>
+  </property>
+
+  <!-- S3A configuration for SeaweedFS -->
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>http://seaweedfs-filer:8333</value>
+  </property>
+  <property>
+    <name>fs.s3a.access.key</name>
+    <value>admin</value>
+  </property>
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>adminpass</value>
+  </property>
+  <property>
+    <name>fs.s3a.path.style.access</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>fs.s3a.connection.ssl.enabled</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+
+  <!-- JDBC connection to PostgreSQL for Hive Metastore -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://postgres:5432/metastore</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hivepass</value>
+  </property>
+</configuration>

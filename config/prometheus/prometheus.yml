@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # SeaweedFS Master (metrics on dedicated port)
+  - job_name: seaweedfs-master
+    static_configs:
+      - targets: ['seaweedfs-master:9324']
+
+  # SeaweedFS Volume Servers (metrics on dedicated port)
+  - job_name: seaweedfs-volumes
+    static_configs:
+      - targets: ['seaweedfs-volume:9325']
+
+  # SeaweedFS Filer + S3 Gateway (metrics on dedicated port)
+  - job_name: seaweedfs-filer
+    static_configs:
+      - targets: ['seaweedfs-filer:9326']
+
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Docker container metrics (cAdvisor)
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # OpenSearch
+  - job_name: opensearch
+    static_configs:
+      - targets: ['opensearch:9600']

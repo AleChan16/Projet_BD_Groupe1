@@ -1,0 +1,180 @@
+groups:
+  - name: seaweedfs
+  
+    rules:
+    
+      # Alert if any SeaweedFS target is down for more than 1 minute
+      - alert: SeaweedFSNodeDown
+        expr: up{job="seaweedfs"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SeaweedFS node {{ $labels.instance }} is down"
+          description: "The SeaweedFS node {{ $labels.instance }} (job {{ $labels.job }}) has been unreachable for more than 1 minute."
+
+      # Alert if a volume server is missing (fewer than 3 volume targets up)
+      - alert: SeaweedFSVolumeMissing
+        expr: count(up{job="seaweedfs-volume"} == 1) < 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SeaweedFS cluster has fewer than 3 volume servers"
+          description: "Only {{ $value }} volume server(s) are up. Expected 3."
+
+      # Alert if master is down
+      - alert: SeaweedFSMasterDown
+        expr: up{job="seaweedfs-master"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "SeaweedFS Master is down"
+          description: "The SeaweedFS master (seaweedfs-master:9333) is unreachable."
+
+      # Alert if filer/S3 gateway is down
+      - alert: SeaweedFSFilerDown
+        expr: up{job="seaweedfs-filer"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "SeaweedFS Filer/S3 Gateway is down"
+          description: "The SeaweedFS Filer (seaweedfs-filer:8888) is unreachable. S3 API is unavailable."
+          
+      # Alert if volume disk usage exceeds 85%
+      - alert: SeaweedFSVolumeHighUsage
+        expr: weed_volume_disk_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Volume disk usage high"
+          description: "Volume {{ $labels.instance }} is {{ $value }}% full."
+
+      # Alert if filer request latency exceeds 1 second    
+      - alert: SeaweedFSHighLatency
+        expr: weed_filer_request_duration_seconds > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SeaweedFS Filer high latency"
+          description: "Filer {{ $labels.instance }} has high request latency: {{ $value }} seconds."
+
+  - name: opensearch
+  
+    rules:
+    
+      - alert: OpenSearchNodeDown
+        expr: absent(container_last_seen{name=~"opensearch$"}) or (time() - container_last_seen{name=~"opensearch$"}) > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenSearch node {{ $labels.name }} is down"
+          description: "The OpenSearch container {{ $labels.name }} has not been seen for more than 1 minute."
+
+      - alert: OpenSearchHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name=~"opensearch$"}[5m]) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch node {{ $labels.name }} high CPU"
+          description: "OpenSearch node {{ $labels.name }} CPU usage is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: OpenSearchHighMemory
+        expr: container_memory_usage_bytes{name=~"opensearch$"} / container_spec_memory_limit_bytes{name=~"opensearch$"} > 0.9 and container_spec_memory_limit_bytes{name=~"opensearch$"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch node {{ $labels.name }} high memory"
+          description: "OpenSearch node {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
+
+      - alert: OpenSearchFrequentRestarts
+        expr: increase(container_start_time_seconds{name=~"opensearch"}[1h]) > 2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch node {{ $labels.name }} restarting frequently"
+          description: "OpenSearch node {{ $labels.name }} has restarted {{ $value }} times in the last hour."
+
+      - alert: OpenSearchDashboardsDown
+        expr: absent(container_last_seen{name=~"opensearch-dashboards$"}) or (time() - container_last_seen{name=~"opensearch-dashboards$"}) > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenSearch Dashboards is down"
+          description: "The OpenSearch Dashboards container has not been seen for more than 1 minute."
+
+      - alert: OpenSearchDashboardsHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name=~"opensearch-dashboards$"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch Dashboards high CPU"
+          description: "OpenSearch Dashboards CPU usage is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: OpenSearchDashboardsHighMemory
+        expr: container_memory_usage_bytes{name=~"opensearch-dashboards$"} / container_spec_memory_limit_bytes{name=~"opensearch-dashboards$"} > 0.9 and container_spec_memory_limit_bytes{name=~"opensearch-dashboards$"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch Dashboards high memory"
+          description: "OpenSearch Dashboards is using {{ $value | humanizePercentage }} of its memory limit."
+
+      - alert: OpenSearchDashboardsFrequentRestarts
+        expr: increase(container_start_time_seconds{name=~"opensearch-dashboards$"}[1h]) > 2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenSearch Dashboards restarting frequently"
+          description: "OpenSearch Dashboards has restarted {{ $value }} times in the last hour."
+
+  - name: grafana
+  
+    rules:
+    
+      - alert: GrafanaDown
+        expr: absent(container_last_seen{name="grafana"}) or (time() - container_last_seen{name="grafana"}) > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Grafana is down"
+          description: "The Grafana container has not been seen for more than 1 minute."
+
+      - alert: GrafanaHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name="grafana"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana high CPU"
+          description: "Grafana CPU usage is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: GrafanaHighMemory
+        expr: container_memory_usage_bytes{name="grafana"} / container_spec_memory_limit_bytes{name="grafana"} > 0.9 and container_spec_memory_limit_bytes{name="grafana"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana high memory"
+          description: "Grafana is using {{ $value | humanizePercentage }} of its memory limit."
+
+      - alert: GrafanaFrequentRestarts
+        expr: increase(container_start_time_seconds{name="grafana"}[1h]) > 2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana restarting frequently"
+          description: "Grafana has restarted {{ $value }} times in the last hour."

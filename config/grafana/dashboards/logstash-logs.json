@@ -1,0 +1,516 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "schemaVersion": 38,
+  "tags": ["logstash", "opensearch", "logs"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Logstash — OpenSearch Logs",
+  "uid": "logstash-opensearch-logs",
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Index",
+        "name": "index",
+        "options": [],
+        "query": "logstash-*",
+        "refresh": 2,
+        "type": "textbox",
+        "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Vue d'ensemble",
+      "type": "row"
+    },
+    {
+      "title": "Documents total (plage)",
+      "type": "stat",
+      "id": 1,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "unit": "short",
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["sum"] }
+      }
+    },
+    {
+      "title": "Taux d'ingestion (docs/s)",
+      "type": "stat",
+      "id": 2,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "1m", "min_doc_count": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "title": "Hosts distincts",
+      "type": "stat",
+      "id": 3,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "cardinality", "field": "host.name.keyword", "settings": {} }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["max"] }
+      }
+    },
+    {
+      "title": "Niveaux de log distincts",
+      "type": "stat",
+      "id": 4,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-* AND level:*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "cardinality", "field": "level.keyword", "settings": {} }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "orange", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["max"] }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "Volume dans le temps",
+      "type": "row"
+    },
+    {
+      "title": "Volume de logs (docs / intervalle)",
+      "type": "timeseries",
+      "id": 10,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "Total",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" }
+            }
+          ]
+        },
+        {
+          "refId": "B",
+          "alias": "Erreurs",
+          "query": "_index:logstash-* AND (level:ERROR OR level:error OR level:WARN OR level:warn)",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "stacking": { "group": "A", "mode": "none" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Erreurs" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Total" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum", "max"] }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "Répartitions",
+      "type": "row"
+    },
+    {
+      "title": "Top 10 hosts",
+      "type": "piechart",
+      "id": 20,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "host.name.keyword",
+              "settings": { "order": "desc", "orderBy": "1", "size": "10", "min_doc_count": "1" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Top 10 niveaux de log",
+      "type": "piechart",
+      "id": 21,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 15 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-* AND level:*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "level.keyword",
+              "settings": { "order": "desc", "orderBy": "1", "size": "10", "min_doc_count": "1" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "ERROR" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "WARN" },  "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "INFO" },  "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "DEBUG" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Top 10 sources (log.file.path)",
+      "type": "barchart",
+      "id": 22,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-* AND log.file.path:*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "log.file.path.keyword",
+              "settings": { "order": "desc", "orderBy": "1", "size": "10", "min_doc_count": "1" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" },
+        "xTickLabelRotation": -30,
+        "xTickLabelMaxLength": 40
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 103,
+      "title": "Évolution par niveau",
+      "type": "row"
+    },
+    {
+      "title": "Logs par niveau dans le temps",
+      "type": "timeseries",
+      "id": 30,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-* AND level:*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "count" }],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "terms",
+              "field": "level.keyword",
+              "settings": { "order": "desc", "orderBy": "1", "size": "6", "min_doc_count": "1" }
+            },
+            {
+              "id": "3",
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "settings": { "interval": "auto", "min_doc_count": "0" }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "ERROR" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "WARN" },  "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "INFO" },  "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "DEBUG" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum", "max", "mean"] }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "id": 104,
+      "title": "Logs bruts",
+      "type": "row"
+    },
+    {
+      "title": "Messages de log récents",
+      "type": "logs",
+      "id": 40,
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 33 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "_index:logstash-*",
+          "timeField": "@timestamp",
+          "metrics": [{ "id": "1", "type": "logs", "settings": { "limit": "500" } }],
+          "bucketAggs": []
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    },
+    {
+      "collapsed": true,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 47 },
+      "id": 105,
+      "title": "Erreurs uniquement",
+      "type": "row",
+      "panels": [
+        {
+          "title": "Messages ERROR / WARN récents",
+          "type": "logs",
+          "id": 50,
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 48 },
+          "datasource": { "type": "grafana-opensearch-datasource", "uid": "P9744FCCEAAFBD98F" },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "_index:logstash-* AND (level:ERROR OR level:error OR level:WARN OR level:warn)",
+              "timeField": "@timestamp",
+              "metrics": [{ "id": "1", "type": "logs", "settings": { "limit": "500" } }],
+              "bucketAggs": []
+            }
+          ],
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          }
+        }
+      ]
+    }
+  ]
+}
+

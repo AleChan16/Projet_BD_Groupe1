@@ -1,0 +1,296 @@
+services:
+
+  # SeaweedFS Master
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-master
+    command: 'master -ip=seaweedfs-master -metricsPort=9324'
+    ports: 
+      - "9333:9333"
+    volumes:
+      - ./data/seaweedfs-master:/data
+    networks:
+      - projet
+
+  # SeaweedFS Volume
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-volume
+    depends_on:
+      - seaweedfs-master
+    command: 'volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -port=8080 -dir=/data -max=100 -metricsPort=9325'
+    volumes:
+      - ./data/seaweedfs-volume:/data
+    networks: 
+      - projet
+
+  # SeaweedFS Filer + S3 Gateway
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-filer
+    depends_on:
+      - seaweedfs-master
+      - seaweedfs-volume
+    command: 'filer -master=seaweedfs-master:9333 -s3 -s3.config=/etc/seaweedfs/s3.json -metricsPort=9326'
+    ports:
+      - "8888:8888"
+      - "8333:8333"
+    volumes:
+      - ./config/hive/s3.json:/etc/seaweedfs/s3.json
+    networks:
+      - projet
+
+  # PostgreSQL
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hivepass
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - projet
+
+  # Hive Metastore
+  metastore:
+    image: apache/hive:3.1.3
+    container_name: hive-metastore
+    environment:
+      DB_DRIVER: postgres
+      SERVICE_NAME: metastore
+      IS_RESUME: "${IS_RESUME}"
+      HIVE_METASTORE_WAREHOUSE_DIR: s3a://warehouse/
+      S3_ENDPOINT: http://seaweedfs-filer:8333
+      S3_PATH_STYLE_ACCESS: "true"
+      HADOOP_OPTIONAL_TOOLS: hadoop-aws
+    ports:
+      - "9083:9083"
+    depends_on:
+      - postgres
+      - seaweedfs-filer
+    volumes:
+      - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./config/hive/postgresql-42.6.2.jar:/opt/hive/lib/postgresql-42.6.2.jar
+      - ./config/hive/seaweedfs-hadoop3-client-4.00.jar:/opt/hive/lib/seaweedfs-hadoop3-client-4.00.jar
+    networks:
+      - projet
+
+  # Presto Query Engine
+  presto:
+    image: prestodb/presto:latest
+    container_name: presto
+    ports: 
+      - "8088:8080"
+    volumes:
+      - ./config/presto:/opt/presto-server/etc
+    depends_on:
+      - metastore
+    networks:
+      - projet
+
+  # OpenSearch 
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: opensearch
+    restart: unless-stopped
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx8g
+      - DISABLE_SECURITY_PLUGIN=true
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - ./data/opensearch:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 10g
+    networks:
+      - projet
+
+  # OpenSearch Dashboards
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    container_name: opensearch-dashboards
+    restart: unless-stopped
+    environment: 
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+      - NODE_OPTIONS=--max-old-space-size=1024
+    ports:
+      - "5601:5601"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 1g
+    volumes:
+      - ./config/opensearch-dashboards/opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
+    networks:
+      - projet
+
+  # Spark Master
+  spark-master:
+    image: spark-projet
+    build:
+      context: ./config/spark/.
+      network: host
+    container_name: spark-master
+    hostname: spark-master
+    entrypoint: /bin/bash
+    command: ["-c", "/opt/spark/sbin/start-master.sh; tail -f /dev/null"]
+    ports:
+      - '7077:7077'
+      - '8080:8080'
+      - '4040:4040'
+    volumes:
+      - spark-events:/opt/spark/events
+      - ./scripts/tests:/scripts/tests
+      - ./scripts/data:/scripts/data
+      - ./config/spark/spark-defaults-dockerfile.conf:/opt/spark/conf/spark-defaults.conf:ro
+    environment:
+      - SPARK_DAEMON_MEMORY=1g
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+    networks:
+      - projet
+
+  # Spark worker
+  spark-worker:
+    image: spark-projet
+    container_name: spark-worker
+    hostname: spark-worker
+    entrypoint: /bin/bash
+    command: ["-c", "/opt/spark/sbin/start-worker.sh spark://spark-master:7077; tail -f /dev/null"]
+    depends_on:
+      - spark-master
+    volumes:
+      - spark-events:/opt/spark/events
+      - ./config/spark/spark-defaults-dockerfile.conf:/opt/spark/conf/spark-defaults.conf:ro
+    environment:
+      - SPARK_DAEMON_MEMORY=1g
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_WORKER_CORES=4
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6g
+    networks:
+      - projet
+
+  # Spark server
+  spark-history-server:
+    image: spark-projet
+    container_name: spark-history-server
+    hostname: spark-history-server
+    entrypoint: /bin/bash
+    command: ["-c", "/opt/spark/sbin/start-history-server.sh; tail -f /dev/null"]
+    depends_on:
+      - spark-master
+    ports:
+      - "18080:18080"
+    volumes:
+      - spark-events:/opt/spark/events
+      - ./config/spark/spark-defaults-dockerfile.conf:/opt/spark/conf/spark-defaults.conf:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      - projet
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - ./data/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - projet
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-opensearch-datasource
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/etc/grafana/dashboards
+      - ./data/grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+    mem_limit: 512m
+    networks:
+      - projet
+
+  # Cadvisor for Docker metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor_seaweedfs
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - projet
+
+  dvf-api:
+    image: python:3.11-slim
+    container_name: dvf-api
+    hostname: dvf-api
+    command: >
+      bash -c "pip install -q fastapi uvicorn opensearch-py &&
+               uvicorn main:app --host 0.0.0.0 --port 8000"
+    working_dir: /app
+    volumes:
+      - ./scripts/api:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - opensearch
+    networks:
+      - projet
+    restart: unless-stopped
+
+# Volumes
+volumes:
+  spark-events:
+  
+# Networks
+networks:
+  projet:
+    driver: bridge

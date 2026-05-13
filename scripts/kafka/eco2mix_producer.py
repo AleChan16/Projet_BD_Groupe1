@@ -104,7 +104,7 @@ def fetch_eco2mix(start_datetime=None, limit=BATCH_SIZE):
     params = {
         "limit": limit,
         "order_by": "date_heure DESC",
-        "where": f"date_heure >= '{start_str}'",
+        "where": f"date_heure >= '{start_str}' AND consommation IS NOT NULL",
         "timezone": "Europe/Paris",
     }
 

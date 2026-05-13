@@ -164,7 +164,12 @@ def publish_records(producer, records):
     nb_ok = 0
     nb_fail = 0
 
-    for record in records:
+    records_valides = [r for r in records if r.get("consommation") is not None]
+
+    if len(records_valides) < len(records):
+      warn(f"{len(records) - len(records_valides)} records ignorés (consommation null)")
+
+    for record in records_valides:
         cleaned = clean_record(record)
 
         # Clé du message = région + date_heure (garantit l'ordre par région)
